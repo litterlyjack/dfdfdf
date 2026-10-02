@@ -20,11 +20,12 @@ You have no memory of earlier sessions. This game (**Powder Rush**, an endless l
 - The game is published under my **Roblox group, "Jack's Motion."** Upload all animations (and any other assets that must be owned by the experience owner) **to the Jack's Motion group, not a personal account.** This is very likely why uploaded animations were "rejected for playback" before. If you can't upload to the group yourself, give me exact step-by-step instructions and I'll do it, then you wire the IDs in.
 - **Desktop first, mobile later** (from earlier notes). The UI must still not cut off at any size.
 
-### ⚠ Project folder is in a temporary folder
+### ⚠ The project folder has moved: use `~/Projects/alpine-ski/`
 
-The summary says the project lives in `/private/var/folders/.../T/alpine-ski/`. **That is the macOS temporary folder, which the system can clear**, for example on restart. It holds the Blender files, assets, checkpoints and docs. Before anything else:
-- Copy `alpine-ski/` to `~/Projects/PowderRush/alpine-ski/` (create it if needed). **Not** `~/Documents` or `~/Desktop`: those sync to iCloud on my Mac, which can offload files and create sync-conflict duplicates mid-work. If you can't move it, tell me exactly what to move.
-- Update every path in `PROJECT_SUMMARY.md` and `PROGRESS.md` to the new location.
+The summary says the project lives in `/private/var/folders/.../T/alpine-ski/`. That's the macOS temporary folder, which the system can clear. **I've already copied it to `~/Projects/alpine-ski/`** (`/Users/jackattack/Projects/alpine-ski/`). From now on, that's the only project folder. Never put it in `~/Documents` or `~/Desktop`: those sync to iCloud on my Mac.
+- **Check the copy is complete:** compare the file count and total size of the temp original and `~/Projects/alpine-ski/` (especially `assets/resort/Resort.blend`, `checkpoints/` and `assets/`). Tell me if anything is missing. Don't delete the temp original; I'll do that once you confirm.
+- Update every path in `PROJECT_SUMMARY.md` and `PROGRESS.md` to `~/Projects/alpine-ski/`.
+- Blender: open `Resort.blend` from the new location from now on (`bpy.ops.wm.open_mainfile` with the new path).
 - Leave Ropilot's own sync folder (`ropilot-src`) where Ropilot expects it, but make sure the latest script checkpoint is also copied into the permanent folder.
 
 ---
@@ -313,7 +314,7 @@ Also redo: the main menu/lobby HUD, Locker/Outfits, Shop, Crates, Daily Spin, In
 
 Do these in order. Finish, playtest, verify and update `PROGRESS.md` before moving on:
 
-0. **Orient + backup + re-verify.** Read Appendix A and the docs on disk, move the project out of the temp folder, and save a full `.rbxl` backup. Re-check pass 9's claims for the bugs I listed at the top, and write down which are actually broken and why your checks missed them.
+0. **Orient + backup + re-verify.** Read Appendix A and the docs on disk, confirm the project copy in `~/Projects/alpine-ski/` is complete and update the doc paths, and save a full `.rbxl` backup. Re-check pass 9's claims for the bugs I listed at the top, and write down which are actually broken and why your checks missed them.
 1. **Audit tools** (section 1). Run them and record baseline counts.
 2. **Quick fixes:** icicle orientation, snowmen facing, hidden signs, z-fighting, tree grounding, mountain pop-in, crash sound, borders.
 3. **Ramps + player animations** (section 4).
