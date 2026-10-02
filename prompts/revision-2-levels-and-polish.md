@@ -23,7 +23,7 @@ You have no memory of earlier sessions. This game (**Powder Rush**, an endless l
 ### ⚠ Project folder is in a temporary folder
 
 The summary says the project lives in `/private/var/folders/.../T/alpine-ski/`. **That is the macOS temporary folder, which the system can clear**, for example on restart. It holds the Blender files, assets, checkpoints and docs. Before anything else:
-- Copy `alpine-ski/` to a permanent location (e.g. `~/Documents/PowderRush/alpine-ski/`). If you can't, tell me exactly what to move.
+- Copy `alpine-ski/` to `~/Projects/PowderRush/alpine-ski/` (create it if needed). **Not** `~/Documents` or `~/Desktop`: those sync to iCloud on my Mac, which can offload files and create sync-conflict duplicates mid-work. If you can't move it, tell me exactly what to move.
 - Update every path in `PROJECT_SUMMARY.md` and `PROGRESS.md` to the new location.
 - Leave Ropilot's own sync folder (`ropilot-src`) where Ropilot expects it, but make sure the latest script checkpoint is also copied into the permanent folder.
 
