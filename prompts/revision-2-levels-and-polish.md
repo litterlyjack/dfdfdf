@@ -6,6 +6,48 @@ The main problem is **awareness**: things get placed upside down, facing the wro
 
 I don't care how long this takes. Work in phases, keep notes, and check, double-check and triple-check your own work.
 
+**Start by reading `alpine-ski/PROJECT_SUMMARY.md` and `alpine-ski/PROGRESS.md`.** Keep logging in `PROGRESS.md` as a new "Revision 2" section. Keep `PROJECT_SUMMARY.md` up to date as the handoff document.
+
+---
+
+## ⚠ READ THIS FIRST: PASS 9 SAYS "DONE," BUT I CAN STILL SEE THESE BUGS
+
+`PROJECT_SUMMARY.md` marks many things as fixed and verified. **In my own playtest, these are still broken:**
+- The character still **jitters** while skiing.
+- **Clipping** is still there.
+- **Icicles** are still upside down / look wrong.
+- **Snowmen** still face the wrong way.
+- Models still look weak, and the UI still looks bad.
+
+So **treat every "verified" claim in the summary as unverified until you re-check it**, and figure out *why* your checks missed these. From reading your own notes, I think these are the reasons:
+
+1. **You mostly verify with edit-mode screenshots and numeric/static audits, not with real play.** Your notes say live playtest screenshots time out and Studio runs at ~1–2 fps when its window is unfocused. That means you have **never actually seen** smooth or jittery skiing, the live countdown, or the runtime-built slope objects in motion. Static checks passing doesn't mean the game looks right.
+2. **Runtime-built objects aren't the same as lobby objects.** Icicles, slope snowmen, ramps and set pieces are built by `WorldRenderer` at runtime. Fixing a lobby model or an asset in `Assets` doesn't prove the runtime version is correct. Screenshot **the runtime-built version** (e.g. with `SetPiecePreview`, or by building real chunks in edit mode) from player height.
+3. **The Blender axis convention** (Blender +Y = model front = Roblox −Z; Blender Z+260 = Roblox Y) is a very likely source of the upside-down and backwards objects. Check every asset's real orientation in Roblox. Don't assume the export got it right.
+
+**New verification rules for this revision:**
+- **Every fix needs a screenshot of the actual in-game object** from the player's point of view, plus the audit numbers. An audit alone is not proof.
+- **Write a `TEST_CHECKLIST.md` for me** at the end of every phase: a short list of exactly what I should check in a focused playtest ("ski into the ice cave in level 6 and look at the icicles"). **I'll do the live checks with Studio focused** and report back. Until I confirm something, mark it "awaiting owner check," not "done."
+- For things you can measure, add **telemetry** I can read after a playtest (e.g. the jitter numbers below).
+
+### Codebase-specific causes to investigate (don't skip these)
+
+- **Jitter.** Pass 9 moved the skier to client ownership with an interpolated view and correction smoothing, but it still jitters. Check these specifically:
+  - **Server corrections:** log how often a snapshot correction is applied and how large it is (studs). If the client prediction and the server simulation disagree often, every correction is a visible snap. Find out why they diverge (different inputs, different dt, float order, unsynced hazard timing) and fix the cause.
+  - **Physics vs. CFrame fighting:** the root is unanchored, PlatformStand and network-owned by the client. If code also sets its CFrame every frame, physics and the CFrame writes fight each other. Pick one: either anchor it and drive it purely by CFrame on the client, or drive it purely with constraints.
+  - **Poses via part CFrames:** your notes say poses are applied by rotating part CFrames because `Motor6D.C0` is read-only on generated rigs. Rewriting limb CFrames every frame against Motor6Ds can make limbs shake. Use `Motor6D.Transform` (that's what the Animator writes) in `PreSimulation`/`Stepped`, or real Animations (see below).
+  - **Camera:** make sure the camera follows the *interpolated* view, updated in `BindToRenderStep` at camera priority, after the character is placed in the same frame.
+  - **Hitches:** your telemetry showed build jobs up to ~11 ms (budget 4 ms), a recentre of ~36 ms and streaming peaks of ~42 ms. Those are visible stutters. Get every one under ~4 ms per frame.
+  - Add telemetry for: correction count/size per minute, frame time spikes > 20 ms, and their cause. I'll run a focused playtest and send you the numbers.
+- **Animations.** Your notes say uploaded animations were "rejected for playback," so poses are bundled as code. That usually happens because **an animation must be owned by the same account or group that owns the experience.** Tell me exactly what account/group to upload them under, or give me the steps to do it myself. Real Animator-driven animations should look and blend much better than code poses.
+- **Ramps.** Your notes say the visual ramp profile "matches the simulation's linear profile." A straight linear ramp barely launches you, which is exactly my complaint ("you go up, then straight back down"). Change the simulation and the visuals to a **curved kicker** with a real upward launch (see section 4A).
+- **Borders.** Your notes say skiing more than 11 studs past the edge buries you in the bank (a crash), and the fences are only visual. So players can pass the fences. The **collision boundary must match the fence line**, and it should bump the player back, not crash them (see section 4B).
+- **Mountain pop-in before Level 2.** Candidates: the backdrop that `WorldRenderer` re-centres on the camera, theme set dressing (`WorldRenderer:Extra`) spawning at the level change, a far chunk built inside the view distance, or StreamingEnabled loading a lobby/Summit mesh. Find the actual one and prove it's gone.
+- **Lobby flicker (z-fighting).** `LobbyAudit` only checks overlaps (decor vs. structure). It **does not check coplanar faces**, which is what causes the flickering stud textures. Add that check (section 1).
+- **Summit Express signs under the lodge.** Check the Chairlift and Lodge folders. Find every sign and screenshot it.
+- **Quests.** `QuestService` gives 3 daily (4 VIP) and 2 weekly. Change this per section 7.
+- **Backups.** Your notes say the newest **full place backup (.rbxl) is from Phase 1.** Before anything else, tell me to save one (File → Save to File), or save one yourself if you can. Then save one at the end of every phase.
+
 ---
 
 ## 0. HOW TO WORK ON THIS (READ FIRST)
@@ -83,7 +125,12 @@ Many of the models you make don't look good. From now on:
 - **Optional Daily Run:** one random endless layout that's the same for everyone that day, with its own daily leaderboard.
 
 ### 3B. How to build levels so they stay identical
-- Define each level as **data** (a ModuleScript per level): an ordered list of sections/set pieces with exact positions and parameters, plus a **fixed seed** for any filler decoration. Same data + same seed = identical level every time.
+- **Reuse what exists.** The course is already deterministic from `(seed, chunkIndex)`, and `Director`, `Sections`, `ChunkValidator`, `Path` and the themes already exist. Don't rewrite them. Instead:
+  - The campaign uses a **fixed seed per level** and a **fixed theme per level** (no shuffled theme deck in the campaign; keep the shuffle for Endless).
+  - Add a **level definition** for each level (a ModuleScript per level, or one `Levels` config): the exact ordered list of sections/set pieces for the Director to use instead of its random pacing plan, plus section parameters, length, theme, events (if any) and the level's exclusive obstacles.
+  - Same definition + same seed = identical level, every time, for every player. Add a QA check that builds each level twice and compares the results.
+  - Replace the current distance-based `Config.LevelAt` (levels 1–3 ≈ 806 m, 4+ ≈ 1.2 km) with the campaign's level boundaries. Keep the account level shown as **RANK**, so it doesn't get confused with campaign levels.
+  - Endless mode is the existing endless generator, starting after Level 30 and tuned harder, using every section and set piece.
 - Build a simple **dev level-preview tool** to fly through a level quickly for checking.
 - Build and verify levels **in batches of 5**. Playtest each level start to finish before moving on, and record that in `PROGRESS.md`.
 
@@ -247,6 +294,7 @@ Also redo: the main menu/lobby HUD, Locker/Outfits, Shop, Crates, Daily Spin, In
 
 Do these in order. Finish, playtest, verify and update `PROGRESS.md` before moving on:
 
+0. **Backup + re-verify.** Save a full `.rbxl` backup. Re-check pass 9's claims for the bugs I listed at the top, and write down which are actually broken and why your checks missed them.
 1. **Audit tools** (section 1). Run them and record baseline counts.
 2. **Quick fixes:** icicle orientation, snowmen facing, hidden signs, z-fighting, tree grounding, mountain pop-in, crash sound, borders.
 3. **Ramps + player animations** (section 4).
