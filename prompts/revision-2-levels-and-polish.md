@@ -6,7 +6,26 @@ The main problem is **awareness**: things get placed upside down, facing the wro
 
 I don't care how long this takes. Work in phases, keep notes, and check, double-check and triple-check your own work.
 
-**Start by reading `alpine-ski/PROJECT_SUMMARY.md` and `alpine-ski/PROGRESS.md`.** Keep logging in `PROGRESS.md` as a new "Revision 2" section. Keep `PROJECT_SUMMARY.md` up to date as the handoff document.
+## 🧭 YOU ARE A NEW CHAT: GET ORIENTED FIRST
+
+You have no memory of earlier sessions. This game (**Powder Rush**, an endless low-poly skiing game) was built over many earlier sessions by another Claude chat using Ropilot (Roblox Studio) and Blender. Before changing anything:
+
+1. **Read the handoff document.** The full `PROJECT_SUMMARY.md` from the end of the last session is pasted at the bottom of this prompt (**Appendix A**). It covers where every file lives, the tooling quirks (Ropilot commit workflow, Blender axis mapping, edit-mode screenshots), the architecture, every module, the QA tools and the open items. Where it disagrees with older notes, the summary wins. **Where it disagrees with what I say in this prompt, I win.**
+2. **Then read from disk:** `alpine-ski/PROJECT_SUMMARY.md` (in case it's newer than the appendix), `alpine-ski/PROGRESS.md` (the full pass-by-pass history), and `alpine-ski/GAME_SPEC.md` (the original design brief, which this prompt partly overrides; see section 3).
+3. **Explore the live place and scripts** with Ropilot to confirm the summary matches reality. Don't trust it blindly (see the next section).
+4. **Write a short orientation note** at the top of a new "Revision 2" section in `PROGRESS.md`: what you found, what doesn't match the summary, and your plan for phase 0.
+5. Keep logging in `PROGRESS.md`. **Keep `PROJECT_SUMMARY.md` updated at the end of every phase**, so the next new chat can pick up from it the same way you did.
+
+**Owner facts:**
+- The game is published under my **Roblox group, "Jack's Motion."** Upload all animations (and any other assets that must be owned by the experience owner) **to the Jack's Motion group, not a personal account.** This is very likely why uploaded animations were "rejected for playback" before. If you can't upload to the group yourself, give me exact step-by-step instructions and I'll do it, then you wire the IDs in.
+- **Desktop first, mobile later** (from earlier notes). The UI must still not cut off at any size.
+
+### ⚠ Project folder is in a temporary folder
+
+The summary says the project lives in `/private/var/folders/.../T/alpine-ski/`. **That is the macOS temporary folder, which the system can clear**, for example on restart. It holds the Blender files, assets, checkpoints and docs. Before anything else:
+- Copy `alpine-ski/` to a permanent location (e.g. `~/Documents/PowderRush/alpine-ski/`). If you can't, tell me exactly what to move.
+- Update every path in `PROJECT_SUMMARY.md` and `PROGRESS.md` to the new location.
+- Leave Ropilot's own sync folder (`ropilot-src`) where Ropilot expects it, but make sure the latest script checkpoint is also copied into the permanent folder.
 
 ---
 
@@ -16,7 +35,7 @@ I don't care how long this takes. Work in phases, keep notes, and check, double-
 - The character still **jitters** while skiing.
 - **Clipping** is still there.
 - **Icicles** are still upside down / look wrong.
-- **Snowmen** still face the wrong way.
+- **Snowmen** still face the wrong way: **both** the lobby snowmen **and** the slope (runtime-built) snowmen.
 - Models still look weak, and the UI still looks bad.
 
 So **treat every "verified" claim in the summary as unverified until you re-check it**, and figure out *why* your checks missed these. From reading your own notes, I think these are the reasons:
@@ -39,7 +58,7 @@ So **treat every "verified" claim in the summary as unverified until you re-chec
   - **Camera:** make sure the camera follows the *interpolated* view, updated in `BindToRenderStep` at camera priority, after the character is placed in the same frame.
   - **Hitches:** your telemetry showed build jobs up to ~11 ms (budget 4 ms), a recentre of ~36 ms and streaming peaks of ~42 ms. Those are visible stutters. Get every one under ~4 ms per frame.
   - Add telemetry for: correction count/size per minute, frame time spikes > 20 ms, and their cause. I'll run a focused playtest and send you the numbers.
-- **Animations.** Your notes say uploaded animations were "rejected for playback," so poses are bundled as code. That usually happens because **an animation must be owned by the same account or group that owns the experience.** Tell me exactly what account/group to upload them under, or give me the steps to do it myself. Real Animator-driven animations should look and blend much better than code poses.
+- **Animations.** Your notes say uploaded animations were "rejected for playback," so poses are bundled as code. That usually happens because **an animation must be owned by the same account or group that owns the experience.** The experience is owned by the **"Jack's Motion" group**, so re-upload the animations under that group. If you can't, give me the exact steps and I'll do it. Real Animator-driven animations should look and blend much better than code poses.
 - **Ramps.** Your notes say the visual ramp profile "matches the simulation's linear profile." A straight linear ramp barely launches you, which is exactly my complaint ("you go up, then straight back down"). Change the simulation and the visuals to a **curved kicker** with a real upward launch (see section 4A).
 - **Borders.** Your notes say skiing more than 11 studs past the edge buries you in the bank (a crash), and the fences are only visual. So players can pass the fences. The **collision boundary must match the fence line**, and it should bump the player back, not crash them (see section 4B).
 - **Mountain pop-in before Level 2.** Candidates: the backdrop that `WorldRenderer` re-centres on the camera, theme set dressing (`WorldRenderer:Extra`) spawning at the level change, a far chunk built inside the view distance, or StreamingEnabled loading a lobby/Summit mesh. Find the actual one and prove it's gone.
@@ -294,7 +313,7 @@ Also redo: the main menu/lobby HUD, Locker/Outfits, Shop, Crates, Daily Spin, In
 
 Do these in order. Finish, playtest, verify and update `PROGRESS.md` before moving on:
 
-0. **Backup + re-verify.** Save a full `.rbxl` backup. Re-check pass 9's claims for the bugs I listed at the top, and write down which are actually broken and why your checks missed them.
+0. **Orient + backup + re-verify.** Read Appendix A and the docs on disk, move the project out of the temp folder, and save a full `.rbxl` backup. Re-check pass 9's claims for the bugs I listed at the top, and write down which are actually broken and why your checks missed them.
 1. **Audit tools** (section 1). Run them and record baseline counts.
 2. **Quick fixes:** icicle orientation, snowmen facing, hidden signs, z-fighting, tree grounding, mountain pop-in, crash sound, borders.
 3. **Ramps + player animations** (section 4).
@@ -312,3 +331,261 @@ When finished (or when you have to stop), give me:
 - The list of sound IDs for me to check.
 - Anything you couldn't fix, and why.
 - What you recommend doing next.
+
+---
+
+# APPENDIX A: HANDOFF DOCUMENT FROM THE PREVIOUS CHAT (`alpine-ski/PROJECT_SUMMARY.md`, after pass 9)
+
+> The previous Claude chat wrote this at the end of its last session. It's pasted here word for word so you can orient yourself. **Remember: several things it calls "fixed" or "verified" are still broken in my playtests** (see "READ THIS FIRST" above). Use it as a map of the project, not as proof that something works.
+
+````markdown
+# Powder Rush ("Ski As Far As You Can"): project summary and handoff
+
+_Last updated 2026-10-02, after polish pass 9. This is the starting point for a new chat. Where it disagrees with older notes, this file wins._
+
+**Game.** An endless, procedurally generated, low-poly downhill skiing game on Roblox. Players ski as far as they can on a fair, skill-based course. Between runs they spend the coins and tickets they earned on cosmetics (suits, skis, trails...), crates, a daily spin and quests in a resort lobby. Cosmetics never affect survival.
+
+---
+
+## 1. Where everything lives
+
+| What | Path / place | Notes |
+|---|---|---|
+| **Live game (source of truth)** | The open Roblox Studio place (universe 10768673585) | All UI is built at runtime, so StarterGui is empty on purpose. |
+| **Script source (synced)** | `/private/var/folders/rj/l53ft6t10ql9ty7jqt5hw1_00000gn/T/ropilot-src/140601517752326/src/` | Edit the files here, then commit back to Studio (see §2). |
+| Project folder | `/private/var/folders/rj/l53ft6t10ql9ty7jqt5hw1_00000gn/T/alpine-ski/` | Docs, assets, QA, checkpoints |
+| Original design brief | `alpine-ski/GAME_SPEC.md` | The full spec: movement, generation, hazards, economy, UI, monetization |
+| Running log | `alpine-ski/PROGRESS.md` | History pass by pass. Sections 1–5 are old (pre-redesign); sections 6–9 are recent. |
+| **Latest script checkpoint** | `alpine-ski/checkpoints/pass9-2026-10-02/src/` | A copy of all scripts as of now. Older checkpoints are in the same folder. |
+| Blender sources | `alpine-ski/assets/resort/Resort.blend` plus `lib.py`, `terrain.py`, `nature.py`, `props.py`, `hazards.py`, `gear.py`, `icons.py`, `assets2.py`, `placements.py` | `lib.py` has the Builder class, the `ResortPalette` texture atlas and helpers |
+| Painted UI images | `alpine-ski/assets/ui/` | Wheel face, pointer, glow, trail map (+ `route.npy`, `trail_marks.json`) |
+| Suit textures | `alpine-ski/assets/suits/` | 25 suit prints |
+| Before/after screenshots | `alpine-ski/qa/pass9_after/` | Named by the user's original screenshot number (01–17) |
+| Stale source | `T/src/` | An early Phase 1 copy. **Never edit or restore from it.** |
+
+---
+
+## 2. Tooling and workflow (Ropilot plus Blender)
+
+- **Editing scripts.** Edit the local file, then commit it (`ropilot_sourcecontrol_commitscript`).
+  - To add a new script, use `createscript`. **Create-script overwrites the local file with a template**, so write or copy the content *after* creating it, then commit.
+  - To fetch a fresh copy from Studio, use `requestscript`.
+- **Edit-context Lua.** For builders and QA run from edit mode:
+  - Clone a module before you `require` it, to dodge the require cache: `local c = M:Clone(); c.Parent = game.ServerStorage; require(c)`.
+  - For the shared `ReplicatedStorage.Alpine` modules, clone the whole folder, swap it in, then restore the original afterwards.
+  - Plugin context **can** set `ModuleScript.Source`.
+- **Builders** live in `ServerStorage.ResortBuilder`, run as `require(Builder)(require(Kit), workspace.AlpineLobby, ...)`.
+  - `Kit.model(name, parent)` destroys and recreates a model.
+  - `Kit.asset` places a model from `ReplicatedStorage.Alpine.Assets`.
+- **QA modules** are in `ServerStorage.PowderRushQA` (see §8).
+- **Screenshots.**
+  - `ropilot_studio_screenshot` takes edit mode only. To aim it, set `workspace.CurrentCamera.CameraType = Scriptable` and its CFrame, then restore.
+  - Studio "front" views are often from behind the subject, so aim the camera by hand instead.
+  - **The in-playtest `ropilot_screenshot` helper times out every time, and playtests seem throttled to about 1–2 fps when the Studio window is unfocused.** Timings measured in playtests and quick sequences such as the countdown are unreliable. Check visuals in edit mode with `UIPreview` / `SetPiecePreview`, and check logic with numeric samples.
+- **Playtests** go through the `roblox-tester` subagent. Give it exact paths and steps. Afterwards, call `ropilot_is_playing` and stop the test if it's still running.
+- **Blender** runs headless and restarts after 30 idle minutes, which empties the scene. To get back, run `bpy.ops.wm.open_mainfile(Resort.blend)`.
+  - Axis mapping: Roblox X = Blender X, Roblox Y = Blender Z + 260 (terrain), Roblox Z = −Blender Y. Blender +Y is the model's front, which is Roblox −Z.
+  - Imports: `ropilot_blender_import(collection, name, position = bottom centre)`.
+- **Uploading images for UI.** Put each image on a textured plane in Blender, import it, read the MeshPart `TextureID`, then delete the import. IDs are listed in `UIComponents.Images`. New images may take a few minutes before they render.
+- **Gotchas.**
+  - A MeshPart with a `TextureID` ignores `Color`, so tint through `SurfaceAppearance.Color`, or clear `TextureID` with pcall.
+  - Setting `CollisionFidelity = PreciseConvexDecomposition` from edit context once **disconnected Studio**. Avoid it.
+  - `Motor6D.C0` is read-only on generated rigs, so pose by rotating the part CFrames.
+  - EditableMesh is **disabled** in this experience's settings.
+  - StreamingEnabled is **on** (see §6).
+  - Summit meshes have CanQuery = false and convex-hull collision, so raycasts on them are wrong. Use the height functions instead.
+
+---
+
+## 3. Architecture (current)
+
+**Deterministic, server-authoritative simulation with client prediction.**
+- The client sends controls only (steer, brake, boost, hop).
+- The server runs the shared `SkiSimulation` at 60 Hz, decides crashes and rewards, and sends snapshots.
+- The course is generated from `(seed, chunkIndex)`, so client and server build identical courses.
+
+### Shared: `ReplicatedStorage.Alpine`
+
+| Module | Role |
+|---|---|
+| `Config` | All tuning (see the numbers below), plus the 14 themes, economy, audio IDs (`Audio.Beep` is the countdown beep), level maths and `Config.Speed(m)` |
+| `Path` | Path coordinates `(s, x, h)` → world, plus half-width and curvature |
+| `Course` | Chunk provider (`Course.New(seed)`) with chunk fields: hazards, ramps, rails, coins, platforms, gaps, props, cable, lake, mine, cave, `setPiece`, `safeRoutes` <br>`SurfaceHeight` includes platforms (with roof rise), `ProfileHeight` (half-pipe walls, mogul ellipsoids) and `EdgeLift` |
+| `Director` | Plans 6-chunk segments. Slots 2 and 5 hold set pieces only, other slots never do. No set piece repeats within ~800 m and no archetype appears twice in a row. A fixed INTRO opening. |
+| `Sections` | 39 generators: 17 set pieces, 2 recovery fillers, and the rest. Each builds a safe line plus scatter.<br>Builder helpers: `ring`, `smash`, `platform`, `ramp`, `clearBox`, `scatter` (keeps crossing lanes empty), `crossers` |
+| `ChunkValidator` | Safe lane clear, turns survivable, ramps reach landings, ravine bypass, platform and bridge rules.<br>New in pass 9: **"obstacle in crossing lane"**. A failing chunk falls back to an empty chunk on both sides (currently 0 fallbacks). |
+| `SkiSimulation` | Movement, ramps (launch only if velocity > 0), platforms (crash into the side, ride on top), lake speed rule (`FELL THROUGH THE ICE`), rings, smash, crossers, swings, strikes, near misses, adrenaline, boost |
+| `HazardMotion` | Hazard poses: Snowball, Cannon, MovingIce, Icicle, Strike (Rock/Icicle with shake and ease-in fall), Vehicle, Crosser, Swing.<br>Crash reasons: e.g. `FALLEN GIANT`, `CABIN WALL` |
+| `EventSchedule` | Mid-run events (Avalanche, Bear, Gold Rush, Whiteout, Snowman Attack, meteors...) |
+| `Difficulty` | Distance bands |
+| `Catalog` | Cosmetics (suits, skis, poles, helmets, goggles, trails, sleds, emotes, companions...)<br>**9 crates:** Snow, Alpine, Summit plus 6 themed (Volcano, Aurora, Candy, Haunted, Crystal, Clouds) with odds, pity and rarity colours. `Catalog.Tint`, `Catalog.Pool` |
+| `QuestDefinitions`, `ProductConfig` | Quests. Product IDs are still **0**, so no real purchases happen. |
+| `AnimationClips` / `AnimationSampler` | Rider poses bundled as code (uploaded animations were rejected) |
+| `UIComponents` | Design system (§7): `Palette`, `Images`, `IconSheet`/`Icons`, `Panel`, `Button`, `IconButton`, `Label`, `Small`, `Round`, `Stroke`, `Gradient`, `TextStroke`, `Shadow`, `Pop`, `Number`, and **`Theme(root)`** |
+| `Assets` (Folder) | Every model and mesh used by the game (§5) |
+
+### Server: `ServerScriptService.AlpineServer`
+
+| Module | Role |
+|---|---|
+| `RunManager` | Remotes (`Alpine.Net`: Command, Input, State, Meta).<br>Session phases Lobby → Countdown (3 s) → Running → Ended.<br>**The client owns the skier:** an unanchored root with PlatformStand and the player as network owner, which the server never moves during a run.<br>Publishes `AlpinePhase`, `AlpineDistance`, etc. |
+| `DataService` | Session-locked profiles and rewards. Publishes `AlpineSuit`, `AlpineLevel` and `AlpineBest` attributes. `Data:Public(player)` builds the client profile. |
+| `MetaService` | One RemoteFunction for Buy, Equip, Crate, Spin, ClaimQuest, ... Lobby ProximityPrompts with a `Menu` attribute open menus. |
+| `InventoryService`, `QuestService`, `LeaderboardService`, `ProductService`, `CosmeticService` | As named |
+
+### Client: `StarterPlayerScripts.AlpineClient`
+
+| Module | Role |
+|---|---|
+| `Main` | Phase state machine.<br>Fixed 60 Hz prediction, rendered from an **interpolated `view`** with correction smoothing that decays over about 0.15 s.<br>Starts `SuitRenderer` and `NameTags`. Autopilot only runs in Studio, when `workspace:SetAttribute("PowderRushAutopilot", true)`. |
+| `WorldRenderer` (~100 kB) | Budgeted chunk streaming: coroutines with a 4 ms/frame budget, nearest first, current chunk ±1 built at once.<br>**Floating origin:** recentres every 2,880 studs with `BulkMoveTo`, near chunks immediately and far chunks the next frame.<br>Builds all set-piece visuals, hazards and decoration (with the decoration validator, §4).<br>Telemetry attributes on `workspace.AlpineRunWorld` (MaxGenMs, MaxJobMs, RebaseMs...) |
+| `CharacterController`, `CameraController` (air pull-back on big jumps), `EffectsController`, `AudioController`, `WeatherController`, `AnimationController`, `InputController`, `EmoteController` | As named |
+| `UIController` | Lobby HUD, run HUD, **start-light countdown gantry** (§7), run-end screen. Responsive scale 0.6–1.1. |
+| `MetaController` (~50 kB) | Menus (Locker, Shop, Crates, Quests, Index, Records, Settings, **Wheel**), the **3D crate opening**, item previews |
+| `LobbyController` | Client lobby animation (§6) and trail-board updates |
+| `SuitRenderer` | Suits on any avatar, plus the mannequin builder (§6) |
+| `NameTags` | Overhead name tags (§6) |
+| `Autopilot` | Studio test bot |
+
+### Key numbers
+- **Scale:** 1 stud = 0.28 m. A chunk is 240 studs; a Director segment is 6 chunks.
+- **Speed:** 40 + 60·(1 − e^(−m/2600)), capped at 100 st/s (0 m: 40, 1.5 km: 66, 5 km: 91).
+- **Levels:** levels 1–3 are about 806 m each, level 4+ about 1.2 km. After a fixed six-level opening, themes are dealt from a shuffled 14-theme deck with no repeats.
+- **Economy:** 1 coin per 15 m. Pickup 5, ring 15, smash 3, near miss 5, ramp 10, clean landing 10, record 100. 1 ticket per 1,000 m. Milestone chests at 500/1k/2.5k/5k/7.5k m.
+
+---
+
+## 4. Slope content
+
+- **39 sections:**
+
+  | Group | Sections |
+  |---|---|
+  | Classics | Open Cruise, Forest Slalom, Rock Garden, Snowbank Chicane, Glacier Gates, Ravine Jump, Side Ravine, Rail Line, Trick Park, Ice Cave, Frozen River, Cliffside Trail, Resort Run, Snowball Alley, Cannon Alley, Falling Timber, Split Route, Hairpin, Crevasse, Fracture Field |
+  | **Set pieces** | Abandoned Truck, Snowcat Wreck, Fallen Chairlift, Giant Log, Cabin Jump, Patrol Barricade, Snowmobile Crossing, Penguin Parade, Swinging Chairs, Frozen Lake, Snow Bridge, Half-pipe, Mogul Field, Ski Jump, Rockfall, Snowman Field, Mine Tunnel |
+  | Fillers | Narrow Ridge, Powder Bowl |
+
+- **14 themes (one per level):** Alpine Resort, Snow Forest, Glacier, Sunset Ridge, Blizzard, Ice Caves, Extreme Peaks, Aurora Valley, Frozen Lake, Crystal Canyon, Volcanic Ridge, Candy Cane Lane, Haunted Hollow, Cloud Summit.
+  - Each sets its own colours, fog, weather, set dressing (crystals, lava cones, candy canes, pumpkins, ...) and section bias.
+- **Every ramp has a purpose:** a drift onto the truck roof, kickers through rings, the ski-jump lip, ramps over gaps.
+- **Icicles:** hang from the cave ceiling, then shake, trickle, crack and fall with an ease-in before shattering.
+- **Rocks:** fall from the wall side with a growing ground marker.
+- **Snowballs:** grow, leave a track and throw up powder.
+- **Snowmobile crossings:** headlight and spray.
+- **Decoration validator** (`WorldRenderer:Decorate`):
+  - Spacing is measured in world XZ: footprint + 1 stud, at least 6 studs apart.
+  - Keep-out discs around crossing lanes, cable towers and anchors, signs and roadside snowmen.
+  - Every footprint stays inside its own chunk.
+- **Assets:** 6 pine variants (A–F) plus a dead tree, 6 faceted rocks, 6 crystal clusters, 4 icicle sizes, all with tint and scale variation.
+
+**Verification:**
+
+| Check | Result |
+|---|---|
+| CourseV2 regression | 1,800 chunks, **0 fallbacks**, all 39 sections appear, all jumps land |
+| Decoration overlaps | 0 in 96 chunks across 3 seeds |
+| Crossing lanes | 0 objects in 61 lanes |
+| Giant Log | 0/129 crashes in a deterministic autopilot simulation |
+
+---
+
+## 5. Art and asset pipeline
+
+- **Blender collections** in `Resort.blend`, imported as `ReplicatedStorage.Alpine.Assets` (AssetOrigin part at the base, used as PrimaryPart):
+  - PenguinV2: 6-part rig, 1,126 triangles
+  - Crates: CrateSnow, CrateAlpine, CrateSummit, CrateThemed (lid parts are named `*Lid*`, panels `*Panels*`)
+  - Props (PropSet): benches, lamp posts, signposts, ski racks, fire pit, picnic tables, Adirondack chair
+  - Set pieces: car, snowcat, fallen chairlift, giant log, cabin, barricade, snowmobile, minecart, track, mine frame, gold ring
+  - Nature: PinesV2, RocksV2, CrystalsV2, IciclesV2, SnowballV2
+  - SuitV2: unit-space suit pieces with a `UnitSize` attribute
+  - Helmet and goggles: AlpineHelmet / AlpineGoggles
+  - `MannequinR15`: faceless matte R15 body
+  - Summit terrain: SummitNW/NE/SW/SE
+- **Triangle budgets are all met.** The largest object is the car (1,348). Props are 200–1,108; everything is under 5k.
+- **Terrain** (`terrain.py` `summit_height`): **fixed in pass 9.**
+  - The massif term used to floor the ground at −6, which built a 64–162-stud cliff and shelf beside the lobby (the user's "edge wall").
+  - The base now blends from the side slope to −6 between z = 200 and z = 400. The peaks are unchanged.
+  - `terrain_pre_pass9.py` is kept for reference, and `ResortBuilder.SummitDelta` holds the height delta.
+
+---
+
+## 6. Lobby (`workspace.AlpineLobby`)
+
+- **Top-level folders:** Lodge, Chairlift, StartArea (StartGate, TrailMapBoard, Firepit, PracticeArea...), LockerHut, Market (CrateShed, SkiShop...), Plaza, Grounds, Props, PrizeWheelStation, Bounds (invisible guards), Summit (4 terrain meshes), Polish (CrateShrine, SuitGallery, Penguins, Drifts, FestoonLights, LevelsBoard), Forest (ForestV2), Edges (berms).
+- About 8.1k parts. 3,192 shadow casters (berms, mounds) were turned off.
+- **Builders:** Polish, ForestV2, Edges, PropSwap, TrailBoard, SummitHeights (height grid, now corrected), SummitDelta.
+- **Overlap audit:** `PowderRushQA.LobbyAudit(fix)` reports **0** (it started at 15 real overlaps).
+- **Fixed this pass:** pitched crate-shed roof with tier chests inside, ski racks instead of skis leaning on walls, the bin moved out of the shed corner, a lamp moved off the signpost, a tree removed from the trail board's sightline, and old berm wedges rotated so their slopes face out.
+- **Streaming:** penguins are Persistent; chairs, shrine crates, showcases and the wheel are Atomic. `LobbyController` adopts models as they stream in and drops ones that leave.
+- **Penguins:** client-side rig animation with one `BulkMoveTo` per penguin per frame: waddle with foot lift, head look-around, flipper flap, belly slide. Verified live.
+- **Suit Gallery:** five R15 mannequins on three-tier rarity-lit pedestals. **Shrine:** tier chests that bob and glow.
+- **Start gate:** the light bar was lowered off the banner. The lamps start dim and copy the countdown.
+- **Trail board v2:** illustrated map, pulsing YOU ARE HERE, LV waypoints, a BEST flag placed along the route, and challenge cards. `LobbyController.Profile` fills it in.
+- **SuitRenderer v2:**
+  - Modelled suit pieces with the skin's SurfaceAppearance, mirrored trim stripes, gloves, boots, and a helmet and goggles sized to the head.
+  - Hats, hair and face accessories are hidden locally while a suit is on.
+  - Verified live: 26 welded parts.
+- **NameTags:** BillboardGui `AlpineTag` on the head with level chip, display name, and `BEST n m` (or live distance).
+  - StudsOffset (0, 2.75, 0), AlwaysOnTop, MaxDistance 90. Your own tag hides during the countdown and the run.
+
+---
+
+## 7. UI design system and screens
+
+- **Style:**
+  - Snowy panels: `C.Panel` is white→ice with a navy outline.
+  - Text: FredokaOne for headings, Gotham for small text; navy on light surfaces.
+  - Colours: orange or gold for primary buttons, gold for currency.
+  - `C.Theme(panel)` recolours text on light surfaces. Mark a label with the `KeepColor` attribute to exempt it.
+  - Menus run the theme pass automatically from `ClearContent`. Views without the category column use the full width.
+- **Daily Spin:**
+  - Painted wheel with icons and amounts on each wedge, and a pointer that flicks on each peg.
+  - 5.2 s Quint ease-out with six full turns and a tick per peg, then a reward pop-up with confetti and an odds table. The lobby's 3D wheel spins along.
+  - Verified live: landed on "400" and paid +400.
+- **Crate opening:**
+  - The tier chest drops into a ViewportFrame and shakes while rarity light leaks from the seam.
+  - It unlatches with a hop and click, then the hinged lid opens to 108° with overshoot.
+  - A core glow, rays, flash and sparks lead into the rarity reveal. Odds chips are shown, and you can tap to skip after 0.6 s.
+  - Crate cards show the tier chest and a coloured odds line. Verified live.
+- **Countdown:**
+  - A gantry hangs below the HUD (offset ≈ 124 × HUD scale + 14).
+  - Sequence: dim, 3 = red, 2 = red + amber, 1 = red + amber + amber, GO = all green, then reset. A beep sounds on each step (pitched up for GO) and the number pops in.
+  - In edit-mode preview the 3/2/GO states looked right. In the throttled live test GO fired and the lamps reset; the intermediate 3/2/1 frames weren't caught.
+- **HUD:** speed top-left, distance, level and biome top-centre, coins top-right, boost meter at the bottom.
+
+---
+
+## 8. QA tools (`ServerStorage.PowderRushQA`)
+
+| Module | Use |
+|---|---|
+| `CourseV2()` | Generation regression across 3 seeds × 600 chunks (fallbacks, archetypes, jumps, rails, autopilot) |
+| `LobbyAudit(fix?)` | Decor vs structure and decor vs decor overlap audit, with an automatic fix |
+| `SetPiecePreview(name)` | Builds a section at x = 5000 with a `SetPieceFocus` part for screenshots. Call with `nil` to clean up. |
+| `UIPreview(view)` | Mounts the real UI in StarterGui. Views: `"Wheel"`, `"Crates"`, `"Locker"`, `"Quests"`, `"Lobby"`, `"Countdown"` (pass n), `"Results"`. Call with `nil` to clean up. |
+| `ThemePreview` / `ThemeRestore` | Preview a theme's lighting, and restore it afterwards (don't leave a preview on) |
+
+---
+
+## 9. History (what the user asked for, by pass)
+
+1. **Original spec:** endless skiing game (`GAME_SPEC.md`).
+2. **Phase 1–3:** core skiing, lobby, then the redesign (sections, art, UI).
+3. **Pass 2:** fix clipping into the snow, a better lobby, truly endless levels with 14 themes, and a crate system with suit skins.
+4. **Pass 9 ("Polish & content", with 17 screenshots).** Priority order: smoothness → slope variety → clipping → models → lobby → UI. All done, as described above.
+
+---
+
+## 10. Open items / next steps
+
+1. **Real performance check.** Use a focused Studio window or a phone with the MicroProfiler.
+   - Throttled telemetry showed build jobs up to about 11 ms (budget 4 ms), the world recentre at about 36 ms once per 2.9 km, and streaming peaks around 42 ms.
+   - Consider splitting the recentre further, or capping job slices.
+2. **Device emulator** (phone and tablet) not tested. The logic scales, but it hasn't been seen on those screens.
+3. **Countdown 3/2/1 frames** are not confirmed live (the throttling issue). Run one focused manual test.
+4. **Old Grounds.Berm wedges** still show blocky ends at the lobby sides. Replace them with Edges-style berms.
+5. **Product IDs are 0** (no monetization), and DataStore saving in Studio is untested in production.
+6. **EditableMesh is disabled.** Terrain changes need a Blender re-import.
+7. **Autopilot** sometimes crashes in throttled playtests on timing obstacles; this is not a course issue.
+8. **Backups.** No recent full `.rbxl` place backup; the newest full place file is from Phase 1. Save one: File → Save to File.
+````
